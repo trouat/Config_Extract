@@ -2,10 +2,6 @@ Authors
 -------
  
   * Maxime Olivier - maxime.olivier@amossys.com
-
-Contributors
-------------
-
   * Thierry Quiniou - thierry.quiniou@ensta-bretagne.org
   * Adrien Raffin - adrien.raffin@amossys.fr
   * Thibault Rouat - thibault.rouat@amossys.fr
@@ -19,6 +15,5 @@ Sponsors
 Copyrights
 ----------
 
-pyCAF is licensed under the terms of the GNU GPL either version 3 of
-the License, or (at your option) any later version. Most of the code
-is copyrighted by Maxime Olivier.
+All scripts in this repository are licensed under the terms of the GNU GPL either version 3 of
+the License, or (at your option) any later version.

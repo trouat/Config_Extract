@@ -1,0 +1,5 @@
+#! /bin/bash
+# Conversion pour les systèmes non UTF8
+
+iconv -f UTF8 -t ISO-8859-1//TRANSLIT extract_solaris.sh -o extract_solaris_iso.sh
+iconv -f UTF8 -t ISO-8859-1//TRANSLIT extract_linux.sh -o extract_linux_iso.sh

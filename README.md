@@ -78,14 +78,14 @@ La ligne suivante doit être commentée dans le script GNU/Linux :
 find / -ls ${lsZ} > "${OUTDIR}"/find.txt
 ```
 
-La ligne suivante (juste au dessus) doit être dé-commentée et adaptée. Ici, les répertoires « directoryA » et « DirectoryB » sont ignorés :
+La ligne suivante (juste au-dessus) doit être dé-commentée et adaptée. Ici, les répertoires « directoryA » et « DirectoryB » sont ignorés :
 ```
 find / -type d \( -wholename "/directoryA" -o -wholename "/DirectoryB" \) -prune -o -ls ${lsZ} > "${OUTDIR}"/find.txt
 ```
 
 Le script Solaris contient des directives similaires. La même manipulation permet d’échapper les répertoires réseaux volumineux.
 
-→ _Pourquoi le script n’échape pas automatiquement les répertoires réseaux montés ?_
+→ _Pourquoi le script n’échappe pas automatiquement les répertoires réseaux montés ?_
 
 Nous avions fait initialement le choix d’un script simple et linéaire. Mais nous nous sommes également aperçu que cela dépend du contexte client. Dans la majorité des cas, le script sera utilisé tel quel.
 

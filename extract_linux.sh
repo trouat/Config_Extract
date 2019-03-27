@@ -166,10 +166,10 @@ echo "[+] liste des processus en écoute"
 ( ( which ss > /dev/null ) && ss -a -n -p || netstat -a -n -p ) > "${OUTDIR}"/netstat.txt;
 
 echo "[+] liste des sockets en écoute"
-( ( which ss > /dev/null ) && ss -ltp > "${OUTDIR}"/ss-listen.txt
+( ( which ss > /dev/null ) && ss -ltp ) > "${OUTDIR}"/ss-listen.txt
 
 echo "[+] liste de connexions établies"
-( ( which ss > /dev/null ) && ss -ptn > "${OUTDIR}"/ss-established.txt
+( ( which ss > /dev/null ) && ss -ptn ) > "${OUTDIR}"/ss-established.txt
 
 echo "[+] liste des processus actifs"
 ps faux${Z} > "${OUTDIR}"/ps.txt

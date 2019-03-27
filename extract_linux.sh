@@ -95,6 +95,29 @@ which_compress () {
     (which xz || which bzip2 || which gzip || which compress) | tail -n1;
 }
 
+get_lxc_conf () {
+    echo "[-] LXC conf…"
+    lxc-checkconfig > "${OUTDIR}"/lxc-check.txt;
+
+    ( for cfg in `lxc-config -l`; do
+        echo "[+] ${cfg}";
+        lxc-config ${cfg};
+    done; ) > "${OUTDIR}"/lxc-config.txt;
+
+    lxc-ls > "${OUTDIR}"/lxc-ls.txt;
+}
+
+get_selinux_conf () {
+    echo "[-] SELinux conf…"
+    getenforce > "${OUTDIR}"/selinux-enforce.txt;
+    sestatus > "${OUTDIR}"/selinux-status.txt;
+    Z="Z";
+    lsZ='-exec ls -Z {} ;';
+    getsebool -a > "${OUTDIR}"/selinux-bool.txt;
+    semanage login -l > "${OUTDIR}"/lxc-login.txt;
+    id -Z >  "${OUTDIR}"/lxc-id.txt;
+}
+
 echo "[+] validation compression"
 _compress=`which_compress`
 if [ -f "${_compress}" ]; then
@@ -128,8 +151,11 @@ echo "[-] distribution détectée : ${DISTRO}"
 # Nettoyage uniquement après la création du répertoire de sortie
 trap "nettoyage" 0
 
-echo "[+] Exécution de la version 0.1 du script d'extraction"
-echo $VERSION > $OUTDIR/version_script.txt
+echo "[+] présence de LXC"
+( which lxc-ls > /dev/null 2>&1; ) && ( which lxc-checkconfig > /dev/null 2>&1; ) && get_lxc_conf;
+
+echo "[+] présence de SELinux"
+( id -Z > /dev/null 2>&1; ) && get_selinux_conf;
 
 echo "[+] liste des fichiers et des droits associés"
 find / -ls ${lsZ} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt

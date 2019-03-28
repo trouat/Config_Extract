@@ -242,7 +242,7 @@ echo "[+] liste des tâches plannifiées des utilisateurs, répertoire"
 [ -d /var/spool/anacron ] && ${_tar} "${OUTDIR}"/var_spool_anacron.tar.xz  -p --atime-preserve /var/spool/anacron ;
 
 echo "[+] journaux d’installation"
-[ -d /var/log ] && ${_tar} "${OUTDIR}"/var_log.tar.xz -p --atime-preserve --ignore-failed-read ${VAR_LOG} 2> "${OUTDIR}"/var_log.txt 
+[ -d /var/log ] && ${_tar} "${OUTDIR}"/var_log.tar.xz -p --atime-preserve --ignore-failed-read "${VAR_LOG}" 2> "${OUTDIR}"/var_log.txt 
 
 echo "[+] timestamp"
 date +%s > "${OUTDIR}"/timestamp.txt

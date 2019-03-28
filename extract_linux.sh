@@ -114,8 +114,17 @@ get_selinux_conf () {
     Z="Z";
     lsZ='-exec ls -Z {} ;';
     getsebool -a > "${OUTDIR}"/selinux-bool.txt;
-    semanage login -l > "${OUTDIR}"/lxc-login.txt;
-    id -Z >  "${OUTDIR}"/lxc-id.txt;
+    semanage login -l > "${OUTDIR}"/se-login.txt;
+    id -Z >  "${OUTDIR}"/se-id.txt;
+}
+
+get_crypt_conf () {
+    echo "[-] cryptsetup conf…"
+    dmsetup ls --target crypt > "${OUTDIR}"/crypt_target.txt;
+    
+    for item in $(cat "${OUTDIR}"/crypt_target.txt | awk '{print $1}');
+        do cryptsetup status ${item} >> "${OUTDIR}"/encrypted.txt;
+    done;
 }
 
 echo "[+] validation compression"
@@ -156,6 +165,9 @@ echo "[+] présence de LXC"
 
 echo "[+] présence de SELinux"
 ( id -Z > /dev/null 2>&1; ) && get_selinux_conf;
+
+echo "[+] présence de dm_crypt"
+( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf;
 
 echo "[+] liste des fichiers et des droits associés"
 find / -ls ${lsZ} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt

@@ -93,7 +93,7 @@ Nous avions fait initialement le choix d’un script simple et linéaire. Mais n
 
 Deux branches sont disponibles : 
 * _**master**_, code stable et éprouvé ;
-* _**unstable**_, code réscement modifié qui n’as pas encore été suffisamment testé pour être directement utilisé sur la machine d’un client.
+* _**unstable**_, code récemment modifié qui n’as pas encore été suffisamment testé pour être directement utilisé sur la machine d’un client.
 
 Le code doit être éprouvé sur des machines récentes et ancienne et sur des architectures différentes avant d’être poussé sur la branche « master ». Une trace d’exécution doit être réalisé pour chaque architecture testée. Cette trace permet de valider le fonctionnement et d’identifier des anomalies par `diff` entre un fonctionnement anormal chez un client et la trace du fonctionnement nominal.
 

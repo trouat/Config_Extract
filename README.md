@@ -8,7 +8,7 @@ Ce projet contient quatre scripts :
 * `extract_linux.sh`, permet de réaliser les extractions de configurations sur un système GNU/Linux, à exécuter avec les droits « root » par l’administrateur ;
 * ` extract_solaris.sh`, permet de réaliser les extractions de configurations sur un système Solaris 10 et 11, à exécuter avec les droits « root » par l’administrateur ;
 *  `make_ISO-8859-1`, permet de convertir l’encodage des scripts pour un affichage sur une plateforme limitée (pas d’UTF-8) ;
-* check_extract.sh`, permet de valider rapidement que tous les fichiers attendus sont présents sur un ensemble d’archives issu du script d’extraction GNU/Linux.
+* `check_extract.sh`, permet de valider rapidement que tous les fichiers attendus sont présents sur un ensemble d’archives issu du script d’extraction GNU/Linux.
 
 Ces deux derniers scripts sont à exécuter éventuellement sur la machine de l’auditeur. Il est _**fortement recommandé**_ d’exécuter le script `check_extract.sh` sur les archives avant de rentrer au bureau.
 

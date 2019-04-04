@@ -142,6 +142,7 @@ if [ ! "`id -u`" -eq 0 ]; then
 fi
 
 echo "[+] création du répertoire de destination"
+MKTEMP_BIN=`which mktemp`
 if [ -n "${MKTEMP_BIN}" ] && [ -x "${MKTEMP_BIN}" ]; then
     TMPDIR="`mktemp -d`"
     OUTDIR="${TMPDIR}/${HOSTNAME}"

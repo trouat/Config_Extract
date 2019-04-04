@@ -219,7 +219,7 @@ getent group > "${OUTDIR}"/group.txt
 
 echo "[+] configuration réseau"
 ( ( which ip > /dev/null ) && ip a || ifconfig -a ) > "${OUTDIR}"/network.txt
-( which ethtool > /dev/null ) && get_eth > "${OUTDIR}"/net_phys.txt
+( ( which ethtool > /dev/null ) && get_eth ) > "${OUTDIR}"/net_phys.txt
 
 echo "[+] table de routage"
 ( ( which ip > /dev/null ) && ip route show || route -n -e ) > "${OUTDIR}"/routes.txt

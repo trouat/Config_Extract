@@ -127,6 +127,16 @@ get_crypt_conf () {
     done;
 }
 
+get_ls_attr () {
+    echo "[-] lsattr && ls"
+    mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr;
+    cat "${OUTDIR}"/fifo_attr | xargs -0 lsattr > "${OUTDIR}"/attr.txt 2> "${OUTDIR}"/attr_log.txt&
+    cat "${OUTDIR}"/fifo_ls   | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
+    find / -print0 | tee "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr > /dev/null;
+    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr;
+}
+
+
 echo "[+] validation compression"
 _compress=`which_compress`
 if [ -f "${_compress}" ]; then
@@ -171,7 +181,10 @@ echo "[+] présence de dm_crypt"
 ( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf;
 
 echo "[+] liste des fichiers et des droits associés"
-find / -ls ${lsZ} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt
+
+( which lsattr > /dev/null  ) && get_ls_attr || find / -print0 | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;
+
+
 ### Liste des fichiers avec exclusion de répertoire (Linux)
 #find / -type d \( -wholename "/directoryA" -o -wholename "/DirectoryB" \) -prune -o -ls ${lsZ} > "${OUTDIR}"/find.txt
 

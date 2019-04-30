@@ -157,9 +157,9 @@ MKTEMP_BIN=`which mktemp`
 if [ -n "${MKTEMP_BIN}" ] && [ -x "${MKTEMP_BIN}" ]; then
     TMPDIR="`mktemp -d`"
     OUTDIR="${TMPDIR}/${HOSTNAME}"
-    mkdir "${OUTDIR}"
+    mkdir -p  "${OUTDIR}"
 elif [ ! -d "${OUTDIR}" ]; then
-    mkdir "${OUTDIR}"
+    mkdir -p "${OUTDIR}"
 else
     erreur "Impossible de créer le répertoire de sortie"
 fi

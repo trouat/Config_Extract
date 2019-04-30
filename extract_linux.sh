@@ -129,11 +129,12 @@ get_crypt_conf () {
 
 get_ls_attr () {
     echo "[-] lsattr && ls"
-    mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr;
-    cat "${OUTDIR}"/fifo_attr | xargs -0 lsattr > "${OUTDIR}"/attr.txt 2> "${OUTDIR}"/attr_log.txt&
+    mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
+    cat "${OUTDIR}"/fifo_attr | xargs -0 lsattr      > "${OUTDIR}"/attr.txt 2> "${OUTDIR}"/attr_log.txt&
+    cat "${OUTDIR}"/fifo_cap  | xargs -0 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt&
     cat "${OUTDIR}"/fifo_ls   | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
     find / -print0 | tee "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr > /dev/null;
-    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr;
+    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
 }
 
 
@@ -181,7 +182,6 @@ echo "[+] présence de dm_crypt"
 ( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf;
 
 echo "[+] liste des fichiers et des droits associés"
-
 ( which lsattr > /dev/null  ) && get_ls_attr || find / -print0 | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;
 
 

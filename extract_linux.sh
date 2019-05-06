@@ -85,6 +85,16 @@ get_distribution_type()
     DISTRO=${__dtype}
 }
 
+get_pkg () {
+    if [ "${DISTRO}" == "debian" ]; then
+        dpkg -l > "${OUTDIR}"/pkg_list.txt;
+    elif [ "${DISTRO}" == "redhat" ]; then
+        rpm -qa --last > "${OUTDIR}"/pkg_list.txt;
+    else
+        echo "[!] attention, distribution non reconnue";
+    fi
+}
+
 get_eth () {
     for __inet in /sys/class/net/*; do 
         ethtool "`basename "${__inet}"`";
@@ -186,13 +196,15 @@ echo "[-] distribution détectée : ${DISTRO}"
 trap "nettoyage" 0
 
 echo "[+] présence de LXC ?"
-( which lxc-ls > /dev/null 2>&1; ) && ( which lxc-checkconfig > /dev/null 2>&1; ) && get_lxc_conf;
+( which lxc-ls > /dev/null 2>&1; ) && ( which lxc-checkconfig > /dev/null 2>&1; ) && get_lxc_conf&
 
 echo "[+] présence de SELinux ?"
-( id -Z > /dev/null 2>&1; ) && get_selinux_conf;
+( id -Z > /dev/null 2>&1; ) && get_selinux_conf&
 
 echo "[+] présence de dm_crypt ?"
-( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf;
+( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf&
+
+wait;
 
 echo "[+] liste des fichiers et des droits associés"
 ( which lsattr > /dev/null  ) && get_file_attrib || find / -print0 | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;
@@ -202,77 +214,74 @@ echo "[+] liste des fichiers et des droits associés"
 #find / -type d \( -wholename "/directoryA" -o -wholename "/DirectoryB" \) -prune -o -ls ${lsZ} > "${OUTDIR}"/find.txt
 
 echo "[+] liste des processus en écoute"
-( ( which ss > /dev/null ) && ss -a -n -p || netstat -a -n -p ) > "${OUTDIR}"/netstat.txt;
+( ( which ss > /dev/null ) && ss -a -n -p || netstat -a -n -p ) > "${OUTDIR}"/netstat.txt&
 
 echo "[+] liste des sockets en écoute"
-( ( which ss > /dev/null ) && ss -ltp ) > "${OUTDIR}"/ss-listen.txt
+( ( which ss > /dev/null ) && ss -ltp ) > "${OUTDIR}"/ss-listen.txt&
 
 echo "[+] liste de connexions établies"
-( ( which ss > /dev/null ) && ss -ptn ) > "${OUTDIR}"/ss-established.txt
+( ( which ss > /dev/null ) && ss -ptn ) > "${OUTDIR}"/ss-established.txt&
 
 echo "[+] liste des processus actifs"
-ps faux${Z} > "${OUTDIR}"/ps.txt
+ps faux${Z} > "${OUTDIR}"/ps.txt&
 
 echo "[+] liste formatées des processus"
-ps -axeo pid,ppid,user,args > "${OUTDIR}"/ps-format.txt
+ps -axeo pid,ppid,user,args > "${OUTDIR}"/ps-format.txt&
+
+wait;
 
 echo "[+] liste des paquets installés"
-if [ "${DISTRO}" == "debian" ]; then
-    dpkg -l > "${OUTDIR}"/pkg_list.txt
-elif [ "${DISTRO}" == "redhat" ]; then
-    rpm -qa --last > "${OUTDIR}"/pkg_list.txt
-else
-    echo "[!] attention, distribution non reconnue"
-fi
+get_pkg&
 
 echo "[+] contenu du répertoire /etc/"
-${_tar} "${OUTDIR}"/etc.tar.xz -p --atime-preserve --dereference /etc
+${_tar} "${OUTDIR}"/etc.tar.xz -p --atime-preserve --dereference /etc&
 ### Ignore certains fichiers sensibles (linux)
 #${tar} "${OUTDIR}"/etc.tar.xz -p --atime-preserve --dereference --wildcards --exclude "/etc/passwd*" --exclude "/etc/shadow*" --exclude "/etc/group*" --exclude "/etc/krb5.conf" --exclude "/etc/sudoers*" --exclude "/etc/publickeys*" --exclude "/etc/pki*" /etc
 
 echo "[+] liste des points de montage"
-mount > "${OUTDIR}"/mount.txt
+mount > "${OUTDIR}"/mount.txt&
 
 echo "[+] version du noyau en cours de fonctionnement"
-uname -a > "${OUTDIR}"/uname.txt
+uname -a > "${OUTDIR}"/uname.txt&
 
 echo "[+] configuration du noyau"
-[ -f /boot/"config-`uname -r`" ] && cp /boot/"config-`uname -r`" "${OUTDIR}"/kernel_config.txt;
-[ -f /proc/config.gz ] && cp /proc/config.gz "${OUTDIR}"/config.gz;
+[ -f /boot/"config-`uname -r`" ] && cp /boot/"config-`uname -r`" "${OUTDIR}"/kernel_config.txt&
+[ -f /proc/config.gz ] && cp /proc/config.gz "${OUTDIR}"/config.gz&
 
 echo "[+] liste des utilisateurs et des groupes"
-getent passwd > "${OUTDIR}"/passwd.txt
-getent group > "${OUTDIR}"/group.txt
+getent passwd > "${OUTDIR}"/passwd.txt&
+getent group > "${OUTDIR}"/group.txt&
 
 echo "[+] configuration réseau"
-( ( which ip > /dev/null ) && ip a || ifconfig -a ) > "${OUTDIR}"/network.txt
-( ( which ethtool > /dev/null ) && get_eth ) > "${OUTDIR}"/net_phys.txt
+( ( which ip > /dev/null ) && ip a || ifconfig -a ) > "${OUTDIR}"/network.txt&
+( ( which ethtool > /dev/null ) && get_eth ) > "${OUTDIR}"/net_phys.txt&
 
 echo "[+] table de routage"
-( ( which ip > /dev/null ) && ip route show || route -n -e ) > "${OUTDIR}"/routes.txt
+( ( which ip > /dev/null ) && ip route show || route -n -e ) > "${OUTDIR}"/routes.txt&
 
 echo "[+] règles du pare-feu"
-iptables-save > "${OUTDIR}"/iptables.txt
+iptables-save > "${OUTDIR}"/iptables.txt&
 
 echo "[+] liste des modules noyau"
-lsmod > "${OUTDIR}"/kernel_modules.txt
+lsmod > "${OUTDIR}"/kernel_modules.txt&
 
 echo "[+] configuration matérielle"
-lspci -vvv > "${OUTDIR}"/lspci.txt
-cat /proc/cpuinfo > "${OUTDIR}"/cpuinfo.txt
+lspci -vvv > "${OUTDIR}"/lspci.txt&
+cat /proc/cpuinfo > "${OUTDIR}"/cpuinfo.txt&
 
 echo "[+] options système"
-sysctl -a > "${OUTDIR}"/sysctl.txt
+sysctl -a > "${OUTDIR}"/sysctl.txt&
 
 echo "[+] liste des tâches plannifiées des utilisateurs, répertoire"
-[ -d /var/spool/cron ] && ${_tar} "${OUTDIR}"/var_spool_cron.tar.xz -p --atime-preserve /var/spool/cron ;
-[ -d /var/spool/anacron ] && ${_tar} "${OUTDIR}"/var_spool_anacron.tar.xz  -p --atime-preserve /var/spool/anacron ;
-
+[ -d /var/spool/cron ] && ${_tar} "${OUTDIR}"/var_spool_cron.tar.xz -p --atime-preserve /var/spool/cron&
+[ -d /var/spool/anacron ] && ${_tar} "${OUTDIR}"/var_spool_anacron.tar.xz  -p --atime-preserve /var/spool/anacron&
 echo "[+] journaux d’installation"
-[ -d /var/log ] && ${_tar} "${OUTDIR}"/var_log.tar.xz -p --atime-preserve --ignore-failed-read "${VAR_LOG}" 2> "${OUTDIR}"/var_log.txt 
+[ -d /var/log ] && ${_tar} "${OUTDIR}"/var_log.tar.xz -p --atime-preserve --ignore-failed-read "${VAR_LOG}" 2> "${OUTDIR}"/var_log.txt&
+
+wait;
 
 echo "[+] timestamp"
-date +%s > "${OUTDIR}"/timestamp.txt
+date +%s > "${OUTDIR}"/timestamp.txt;
 
 echo "[+] vérification de la présence des fichiers"
 [ "${VERIFIE}" -eq 1 ] && verification;

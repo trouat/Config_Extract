@@ -130,12 +130,14 @@ get_crypt_conf () {
 get_file_attrib () {
     echo "[-] attributs étendus des fichiers"
     mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
-    cat "${OUTDIR}"/fifo_attr | xargs -0 lsattr      > "${OUTDIR}"/attr.txt 2> "${OUTDIR}"/attr_log.txt&
-    cat "${OUTDIR}"/fifo_cap  | xargs -0 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt&
-    cat "${OUTDIR}"/fifo_ls   | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
-    find / -print0 | tee "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap > /dev/null;
-    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
+    cat "${OUTDIR}"/fifo_attr | xargs -0 lsattr      > "${OUTDIR}"/attr.txt 2> "${OUTDIR}"/attr_log.txt& __ps_attr=$!;
+    cat "${OUTDIR}"/fifo_cap  | xargs -0 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt& __ps_cap=$!;
+    cat "${OUTDIR}"/fifo_ls   | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt& __ps_ls=$!;
+    find / -print0 | tee "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap > /dev/null& __ps_find=$!;
+    wait ${__ps_find}; 
     grep "^[cdrwx-]\{10\}+" "${OUTDIR}"/find.txt | awk '{print $NF}' | xargs getfacl > "${OUTDIR}"/acl.txt
+    wait ${__ps_attr}; wait ${__ps_cap}; wait ${__ps_ls};
+    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
 }
 
 echo "[+] validation compression"

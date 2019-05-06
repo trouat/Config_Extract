@@ -171,13 +171,13 @@ echo "[-] distribution détectée : ${DISTRO}"
 # Nettoyage uniquement après la création du répertoire de sortie
 trap "nettoyage" 0
 
-echo "[+] présence de LXC"
+echo "[+] présence de LXC ?"
 ( which lxc-ls > /dev/null 2>&1; ) && ( which lxc-checkconfig > /dev/null 2>&1; ) && get_lxc_conf;
 
-echo "[+] présence de SELinux"
+echo "[+] présence de SELinux ?"
 ( id -Z > /dev/null 2>&1; ) && get_selinux_conf;
 
-echo "[+] présence de dm_crypt"
+echo "[+] présence de dm_crypt ?"
 ( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf;
 
 echo "[+] liste des fichiers et des droits associés"

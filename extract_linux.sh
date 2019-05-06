@@ -139,17 +139,19 @@ get_crypt_conf () {
 
 get_file_attrib () {
     echo "[-] attributs étendus des fichiers"
-    mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
+    mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_cap;
     
-    cat "${OUTDIR}"/fifo_attr | xargs -0 lsattr      > "${OUTDIR}"/attr_all.txt 2> "${OUTDIR}"/attr_log.txt&
-    __ps_attr=$!;
-    cat "${OUTDIR}"/fifo_cap  | xargs -0 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt&
+    cat "${OUTDIR}"/fifo_cap  | xargs -0 -n7000 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt&
     __ps_cap=$!;
-    cat "${OUTDIR}"/fifo_ls   | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
+    cat "${OUTDIR}"/fifo_ls   | xargs -0 -n7000 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
     __ps_ls=$!;
     
-    find / -print0 | tee "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap > /dev/null&
+    find / -print0 | tee "${OUTDIR}"/fifo_ls > "${OUTDIR}"/fifo_cap&
     __ps_find=$!;
+
+    for __dev in $(mount | grep -i "ext\|btr\|xfs\|reiser\|yaff\|orange\|lustre\|ocfs\|zfs\|f2fs\|jfs" | awk '{print $3}'); do
+        find ${__dev} -xdev -print0 | xargs -0 lsattr 2> /dev/null >> "${OUTDIR}"/attr_all.txt;
+    done;
     
     wait ${__ps_find}; 
     grep "^[cdrwx-]\{10\}+" "${OUTDIR}"/find.txt | awk '{print $NF}' | xargs getfacl > "${OUTDIR}"/acl.txt

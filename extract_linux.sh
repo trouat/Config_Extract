@@ -156,11 +156,11 @@ get_file_attrib () {
     wait ${__ps_find}; 
     grep "^[cdrwx-]\{10\}+" "${OUTDIR}"/find.txt | awk '{print $NF}' | xargs getfacl > "${OUTDIR}"/acl.txt
     
-    wait ${__ps_attr}; 
+    #wait ${__ps_attr}; 
     grep -v "^-------------------- " "${OUTDIR}"/attr_all.txt > "${OUTDIR}"/attr.txt;
     
     wait ${__ps_cap}; wait ${__ps_ls};
-    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
+    rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_cap;
 }
 
 echo "[+] validation compression"

@@ -135,6 +135,7 @@ get_file_attrib () {
     cat "${OUTDIR}"/fifo_ls   | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
     find / -print0 | tee "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap > /dev/null;
     rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_attr "${OUTDIR}"/fifo_cap;
+    grep "^[cdrwx-]\{10\}+" "${OUTDIR}"/find.txt | awk '{print $NF}' | xargs getfacl > "${OUTDIR}"/acl.txt
 }
 
 echo "[+] validation compression"

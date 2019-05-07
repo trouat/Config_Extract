@@ -21,6 +21,8 @@ OUT_FILE_LST="find.txt find_log.txt netstat.txt pkg_list.txt ps.txt mount.txt un
 
 VAR_LOG="$LG/dpkg.log $LG/aptitude $LG/alternatives.log $LG/apt/history.log $LG/pacman.log $LG/lxc/lxc-monitord.log $LG/yum.log $LG/dnf.log*"
 
+P_XARG="7000"
+
 _fpids=""
 
 erreur() {
@@ -180,9 +182,9 @@ get_file_attrib () {
     echo "[-] attributs étendus des fichiers"
     mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_cap;
     
-    bg 'cat "${OUTDIR}"/fifo_cap  | xargs -0 -n7000 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt;'
+    bg 'cat "${OUTDIR}"/fifo_cap  | xargs -0 -n${P_XARG} getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt;'
     __ps_cap=$!;
-    bg 'cat "${OUTDIR}"/fifo_ls   | xargs -0 -n7000 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;'
+    bg 'cat "${OUTDIR}"/fifo_ls   | xargs -0 -n${P_XARG} ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;'
     __ps_ls=$!;
     
     bg 'find / -print0 | tee "${OUTDIR}"/fifo_ls > "${OUTDIR}"/fifo_cap;'

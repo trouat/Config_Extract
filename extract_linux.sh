@@ -47,9 +47,9 @@ verification () {
     cd "${__mypwd}" || ( echo "Impossible de retourner dans l’arborescence initiale." && exit 1 );
 }
 
+
 # Got from http://fr.w3support.net/index.php?db=sf&id=3331
-get_distribution_type()
-{
+get_old_distribution_type() {
     # Assume unknown
     __dtype="unknown"
 
@@ -83,6 +83,28 @@ get_distribution_type()
     fi
 
     DISTRO=${__dtype}
+}
+
+get_distrib() {
+    if which hostnamectl; then
+        hostnamectl status > "${OUTDIR}"/distrib.txt;
+    fi;
+
+    if eval $(cat /etc/*-re* | grep "^ID"); then
+        case ${ID} in
+            debian|ubuntu)
+                DISTRO="debian";
+                ;;
+            centos|rhel|fedora)
+                DISTRO="redhat";
+                ;;
+            suse|gentoo|arch|slackware)
+                DISTRO=${ID};
+                ;;
+        esac
+    else
+        get_old_distribution_type;
+    fi;
 }
 
 get_pkg () {
@@ -156,7 +178,6 @@ get_file_attrib () {
     wait ${__ps_find}; 
     grep "^[cdrwx-]\{10\}+" "${OUTDIR}"/find.txt | awk '{print $NF}' | xargs getfacl > "${OUTDIR}"/acl.txt
     
-    #wait ${__ps_attr}; 
     grep -v "^-------------------- " "${OUTDIR}"/attr_all.txt > "${OUTDIR}"/attr.txt;
     
     wait ${__ps_cap}; wait ${__ps_ls};
@@ -191,7 +212,7 @@ fi
 echo "[-] répertoire de sortie : « ${OUTDIR} »"
 
 echo "[+] détection de la distribution"
-get_distribution_type
+get_distrib
 echo "[-] distribution détectée : ${DISTRO}"
 
 # Nettoyage uniquement après la création du répertoire de sortie

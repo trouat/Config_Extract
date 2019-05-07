@@ -26,13 +26,13 @@ P_XARG="7000"
 _fpids=""
 
 erreur() {
-    echo "[!] $1" > /dev/stderr
-    exit 42
+    echo "[!] $1" > /dev/stderr;
+    exit 42;
 }
 
 bg () {
     eval $@ &
-	_fpids="${_fpids} $!";
+    _fpids="${_fpids} $!";
 }
 
 wait_all () {

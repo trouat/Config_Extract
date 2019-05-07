@@ -21,15 +21,32 @@ OUT_FILE_LST="find.txt find_log.txt netstat.txt pkg_list.txt ps.txt mount.txt un
 
 VAR_LOG="$LG/dpkg.log $LG/aptitude $LG/alternatives.log $LG/apt/history.log $LG/pacman.log $LG/lxc/lxc-monitord.log $LG/yum.log $LG/dnf.log*"
 
+_fpids=""
+
 erreur() {
     echo "[!] $1" > /dev/stderr
     exit 42
 }
 
+bg () {
+    eval $@ &
+	_fpids="${_fpids} $!";
+}
+
+wait_all () {
+    wait;
+    _fpids="";
+}
+
 nettoyage() {
+    if [[ "${_fpids}" != "" ]]; then
+        echo "[!] Arrêt des processus fils ${_fpids}";
+        kill ${_fpids};
+    fi;
+
     if [ ${NETTOYAGE} -eq 1 ]; then
-	echo "[!] nettoyage répertoire de sortie (${OUTDIR})" > /dev/stderr
-	rm -rf ${TMPDIR}
+        echo "[!] nettoyage répertoire de sortie (${OUTDIR})" > /dev/stderr;
+        rm -rf ${TMPDIR};
     fi
 }
 
@@ -163,24 +180,24 @@ get_file_attrib () {
     echo "[-] attributs étendus des fichiers"
     mkfifo "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_cap;
     
-    cat "${OUTDIR}"/fifo_cap  | xargs -0 -n7000 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt&
+    bg 'cat "${OUTDIR}"/fifo_cap  | xargs -0 -n7000 getcap      > "${OUTDIR}"/cap.txt  2> "${OUTDIR}"/cap_log.txt;'
     __ps_cap=$!;
-    cat "${OUTDIR}"/fifo_ls   | xargs -0 -n7000 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt&
+    bg 'cat "${OUTDIR}"/fifo_ls   | xargs -0 -n7000 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;'
     __ps_ls=$!;
     
-    find / -print0 | tee "${OUTDIR}"/fifo_ls > "${OUTDIR}"/fifo_cap&
+    bg 'find / -print0 | tee "${OUTDIR}"/fifo_ls > "${OUTDIR}"/fifo_cap;'
     __ps_find=$!;
 
     for __dev in $(mount | grep -i "ext\|btr\|xfs\|reiser\|yaff\|orange\|lustre\|ocfs\|zfs\|f2fs\|jfs" | awk '{print $3}'); do
-        find ${__dev} -xdev -print0 | xargs -0 lsattr 2> /dev/null >> "${OUTDIR}"/attr_all.txt;
+        find "${__dev}" -xdev -print0 | xargs -0 lsattr 2> /dev/null >> "${OUTDIR}"/attr_all.txt;
     done;
     
-    wait ${__ps_find}; 
+    wait ${__ps_find};
     grep "^[cdrwx-]\{10\}+" "${OUTDIR}"/find.txt | awk '{print $NF}' | xargs getfacl > "${OUTDIR}"/acl.txt
     
     grep -v "^-------------------- " "${OUTDIR}"/attr_all.txt > "${OUTDIR}"/attr.txt;
     
-    wait ${__ps_cap}; wait ${__ps_ls};
+    wait ${__ps_cap}; wait ${__ps_ls}; _fpids="";
     rm "${OUTDIR}"/fifo_ls "${OUTDIR}"/fifo_cap;
 }
 
@@ -219,89 +236,88 @@ echo "[-] distribution détectée : ${DISTRO}"
 trap "nettoyage" 0
 
 echo "[+] présence de LXC ?"
-( which lxc-ls > /dev/null 2>&1; ) && ( which lxc-checkconfig > /dev/null 2>&1; ) && get_lxc_conf&
+bg "( which lxc-ls > /dev/null 2>&1; ) && ( which lxc-checkconfig > /dev/null 2>&1; ) && get_lxc_conf"
 
 echo "[+] présence de SELinux ?"
-( id -Z > /dev/null 2>&1; ) && get_selinux_conf&
+bg "( id -Z > /dev/null 2>&1; ) && get_selinux_conf"
 
 echo "[+] présence de dm_crypt ?"
-( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf&
+bg "( lsmod | grep dm_crypt > /dev/null 2>&1; ) && get_crypt_conf"
 
-wait;
+wait_all;
 
 echo "[+] liste des fichiers et des droits associés"
 ( which lsattr > /dev/null  ) && get_file_attrib || find / -print0 | xargs -0 ls -ltd${Z} > "${OUTDIR}"/find.txt 2> "${OUTDIR}"/find_log.txt;
-
 
 ### Liste des fichiers avec exclusion de répertoire (Linux)
 #find / -type d \( -wholename "/directoryA" -o -wholename "/DirectoryB" \) -prune -o -ls ${lsZ} > "${OUTDIR}"/find.txt
 
 echo "[+] liste des processus en écoute"
-( ( which ss > /dev/null ) && ss -a -n -p || netstat -a -n -p ) > "${OUTDIR}"/netstat.txt&
+bg "( ( which ss > /dev/null ) && ss -a -n -p || netstat -a -n -p ) > "${OUTDIR}"/netstat.txt"
 
 echo "[+] liste des sockets en écoute"
-( ( which ss > /dev/null ) && ss -ltp ) > "${OUTDIR}"/ss-listen.txt&
+bg "( ( which ss > /dev/null ) && ss -ltp ) > "${OUTDIR}"/ss-listen.txt"
 
 echo "[+] liste de connexions établies"
-( ( which ss > /dev/null ) && ss -ptn ) > "${OUTDIR}"/ss-established.txt&
+bg "( ( which ss > /dev/null ) && ss -ptn ) > "${OUTDIR}"/ss-established.txt"
 
 echo "[+] liste des processus actifs"
-ps faux${Z} > "${OUTDIR}"/ps.txt&
+bg "ps faux${Z} > "${OUTDIR}"/ps.txt"
 
 echo "[+] liste formatées des processus"
-ps -axeo pid,ppid,user,args > "${OUTDIR}"/ps-format.txt&
+bg "ps -axeo pid,ppid,user,args > "${OUTDIR}"/ps-format.txt"
 
-wait;
+wait_all;
 
 echo "[+] liste des paquets installés"
-get_pkg&
+bg get_pkg
 
 echo "[+] contenu du répertoire /etc/"
-${_tar} "${OUTDIR}"/etc.tar.xz -p --atime-preserve --dereference /etc&
+bg "${_tar} "${OUTDIR}"/etc.tar.xz -p --atime-preserve --dereference /etc"
 ### Ignore certains fichiers sensibles (linux)
 #${tar} "${OUTDIR}"/etc.tar.xz -p --atime-preserve --dereference --wildcards --exclude "/etc/passwd*" --exclude "/etc/shadow*" --exclude "/etc/group*" --exclude "/etc/krb5.conf" --exclude "/etc/sudoers*" --exclude "/etc/publickeys*" --exclude "/etc/pki*" /etc
 
 echo "[+] liste des points de montage"
-mount > "${OUTDIR}"/mount.txt&
+bg "mount > "${OUTDIR}"/mount.txt"
 
 echo "[+] version du noyau en cours de fonctionnement"
-uname -a > "${OUTDIR}"/uname.txt&
+bg "uname -a > "${OUTDIR}"/uname.txt"
 
 echo "[+] configuration du noyau"
-[ -f /boot/"config-`uname -r`" ] && cp /boot/"config-`uname -r`" "${OUTDIR}"/kernel_config.txt&
-[ -f /proc/config.gz ] && cp /proc/config.gz "${OUTDIR}"/config.gz&
+bg "[ -f /boot/"config-`uname -r`" ] && cp /boot/"config-`uname -r`" "${OUTDIR}"/kernel_config.txt"
+bg "[ -f /proc/config.gz ] && cp /proc/config.gz "${OUTDIR}"/config.gz"
 
 echo "[+] liste des utilisateurs et des groupes"
-getent passwd > "${OUTDIR}"/passwd.txt&
-getent group > "${OUTDIR}"/group.txt&
+bg "getent passwd > "${OUTDIR}"/passwd.txt"
+bg "getent group > "${OUTDIR}"/group.txt"
 
 echo "[+] configuration réseau"
-( ( which ip > /dev/null ) && ip a || ifconfig -a ) > "${OUTDIR}"/network.txt&
-( ( which ethtool > /dev/null ) && get_eth ) > "${OUTDIR}"/net_phys.txt&
+bg "( ( which ip > /dev/null ) && ip a || ifconfig -a ) > "${OUTDIR}"/network.txt"
+bg "( ( which ethtool > /dev/null ) && get_eth ) > "${OUTDIR}"/net_phys.txt"
 
 echo "[+] table de routage"
-( ( which ip > /dev/null ) && ip route show || route -n -e ) > "${OUTDIR}"/routes.txt&
+bg "( ( which ip > /dev/null ) && ip route show || route -n -e ) > "${OUTDIR}"/routes.txt"
 
 echo "[+] règles du pare-feu"
-iptables-save > "${OUTDIR}"/iptables.txt&
+bg "iptables-save > "${OUTDIR}"/iptables.txt"
 
 echo "[+] liste des modules noyau"
-lsmod > "${OUTDIR}"/kernel_modules.txt&
+bg "lsmod > "${OUTDIR}"/kernel_modules.txt"
 
 echo "[+] configuration matérielle"
-lspci -vvv > "${OUTDIR}"/lspci.txt&
-cat /proc/cpuinfo > "${OUTDIR}"/cpuinfo.txt&
+bg "lspci -vvv > "${OUTDIR}"/lspci.txt"
+bg "cat /proc/cpuinfo > "${OUTDIR}"/cpuinfo.txt"
 
 echo "[+] options système"
-sysctl -a > "${OUTDIR}"/sysctl.txt&
+bg "sysctl -a > "${OUTDIR}"/sysctl.txt"
 
 echo "[+] liste des tâches plannifiées des utilisateurs, répertoire"
-[ -d /var/spool/cron ] && ${_tar} "${OUTDIR}"/var_spool_cron.tar.xz -p --atime-preserve /var/spool/cron&
-[ -d /var/spool/anacron ] && ${_tar} "${OUTDIR}"/var_spool_anacron.tar.xz  -p --atime-preserve /var/spool/anacron&
+bg "[ -d /var/spool/cron ] && ${_tar} "${OUTDIR}"/var_spool_cron.tar.xz -p --atime-preserve /var/spool/cron"
+bg "[ -d /var/spool/anacron ] && ${_tar} "${OUTDIR}"/var_spool_anacron.tar.xz  -p --atime-preserve /var/spool/anacron"
 echo "[+] journaux d’installation"
-[ -d /var/log ] && ${_tar} "${OUTDIR}"/var_log.tar.xz -p --atime-preserve --ignore-failed-read "${VAR_LOG}" 2> "${OUTDIR}"/var_log.txt&
+bg "[ -d /var/log ] && ${_tar} "${OUTDIR}"/var_log.tar.xz -p --atime-preserve --ignore-failed-read "${VAR_LOG}" 2> "${OUTDIR}"/var_log.txt"
 
-wait;
+wait_all;
 
 echo "[+] timestamp"
 date +%s > "${OUTDIR}"/timestamp.txt;
